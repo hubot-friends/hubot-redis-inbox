@@ -26,7 +26,7 @@ Set the following environment variables as needed:
 - `HUBOT_REDIS_INBOX_STREAM_NAME` (default: `hubot-inbox`)
 - `HUBOT_REDIS_OUTBOX_STREAM_NAME` (default: `hubot-outbox`)
 - `HUBOT_REDIS_OUTBOX_GROUP_NAME` (default: `hubot-group`)
-- `HUBOT_REDIS_OUTBOX_CONSUMER_NAME` (default: `consumer1`)
+- `HUBOT_REDIS_OUTBOX_CONSUMER_NAME` (default: `consumer-1`)
 
 ## Usage
 

@@ -6,7 +6,7 @@ const HUBOT_REDIS_INBOX_URL = process.env.HUBOT_REDIS_INBOX_URL ?? 'redis://loca
 const HUBOT_REDIS_INBOX_STREAM_NAME = process.env.HUBOT_REDIS_INBOX_STREAM_NAME ?? 'hubot-inbox'
 const HUBOT_REDIS_OUTBOX_STREAM_NAME = process.env.HUBOT_REDIS_OUTBOX_STREAM_NAME ?? 'hubot-outbox'
 const HUBOT_REDIS_OUTBOX_GROUP_NAME = process.env.HUBOT_REDIS_OUTBOX_GROUP_NAME ?? 'hubot-group'
-const HUBOT_REDIS_OUTBOX_CONSUMER_NAME = process.env.HUBOT_REDIS_OUTBOX_CONSUMER_NAME ?? 'consumer1'
+const HUBOT_REDIS_OUTBOX_CONSUMER_NAME = process.env.HUBOT_REDIS_OUTBOX_CONSUMER_NAME ?? 'consumer-1'
 export default async robot => {
 
     const client = createClient({ url: HUBOT_REDIS_INBOX_URL })

@@ -1,5 +1,4 @@
 import { createClient } from 'redis'
-import { Inbox, InboxEnvelope } from './Inbox.mjs'
 import { Outbox } from './Outbox.mjs'
 import { TextMessage } from 'hubot'
 

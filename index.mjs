@@ -1,6 +1,7 @@
 import { createClient } from 'redis'
 import { Inbox, InboxEnvelope } from './Inbox.mjs'
 import { Outbox } from './Outbox.mjs'
+import { TextMessage } from 'hubot'
 
 const HUBOT_REDIS_INBOX_URL = process.env.HUBOT_REDIS_INBOX_URL ?? 'redis://localhost:6378'
 const HUBOT_REDIS_INBOX_STREAM_NAME = process.env.HUBOT_REDIS_INBOX_STREAM_NAME ?? 'hubot-inbox'
@@ -19,8 +20,13 @@ export default async robot => {
     })
     outbox.on('received', async entries => {
         for await (const entry of entries) {
-            const message = entry.message
-            await robot.adapter.reply({room: message.room, user: message.sender, text: message.body}, message.body)
+            let envelope = JSON.parse(entry.message.envelope)
+            switch(entry.message.kind) {
+                default:
+                    envelope.message = new TextMessage(envelope.message.user, envelope.message.text, envelope.message.id)
+                    break
+            }
+            await robot.adapter[entry.message.method](envelope, entry.message.strings)
         }
     })
     await outbox.run()
@@ -37,19 +43,26 @@ export default async robot => {
 
     process.on('SIGINT', cleanup)
     process.on('SIGTERM', cleanup)
-    process.on('uncaughtException', cleanup)
+    process.on('uncaughtException', async err => {
+        console.error('Uncaught Exception:', err)
+        try {
+            await client.close()
+            await outbox.close()
+        } catch (err) {
+            // ignore errors on close
+        }
+        process.exit(1)
+    })
 
     robot.listen(()=>true, {}, async resp => {
         if (resp.message.text.replace(`${robot.name} `, '').length === 0) return
-        const entry = Inbox.Map(resp.message)
         await client.xAdd(HUBOT_REDIS_INBOX_STREAM_NAME, '*', {
-            kind: InboxEnvelope.name,
+            kind: resp.envelope.message.constructor.name,
             recordedAt: new Date().toISOString(),
             occurredAt: new Date().toISOString(),
-            id: entry.id.toString(),
-            sender: entry.sender ?? '',
-            room: entry.room,
-            body: entry.message.body,
+            id: Date.now().toString(),
+            envelope: JSON.stringify(resp.envelope)
         })
+        resp.message.finish()
     })
 }

@@ -18,15 +18,21 @@ export default async robot => {
         groupName: HUBOT_REDIS_OUTBOX_GROUP_NAME,
         consumerName: HUBOT_REDIS_OUTBOX_CONSUMER_NAME,
     })
+
     outbox.on('received', async entries => {
         for await (const entry of entries) {
+            if (entry.message.adapter !== robot.adapter.constructor.name) continue
             let envelope = JSON.parse(entry.message.envelope)
             switch(entry.message.kind) {
                 default:
                     envelope.message = new TextMessage(envelope.message.user, envelope.message.text, envelope.message.id)
                     break
             }
-            await robot.adapter[entry.message.method](envelope, entry.message.strings)
+            try {
+                await robot.adapter[entry.message.method](envelope, entry.message.strings)
+            } catch (err) {
+                console.warn(`Error occurred while processing message: ${err.message}. Could also be that the message came from a different chat provider than this one.`)
+            }
         }
     })
     await outbox.run()
@@ -61,7 +67,8 @@ export default async robot => {
             recordedAt: new Date().toISOString(),
             occurredAt: new Date().toISOString(),
             id: Date.now().toString(),
-            envelope: JSON.stringify(resp.envelope)
+            envelope: JSON.stringify(resp.envelope),
+            adapter: robot.adapter.constructor.name
         })
         resp.message.finish()
     })

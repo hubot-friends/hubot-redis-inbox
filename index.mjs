@@ -1,52 +1,34 @@
 import { createClient } from 'redis'
+import { Inbox, InboxEnvelope } from './Inbox.mjs'
+import { Outbox } from './Outbox.mjs'
 
 const HUBOT_REDIS_INBOX_URL = process.env.HUBOT_REDIS_INBOX_URL ?? 'redis://localhost:6378'
 const HUBOT_REDIS_INBOX_STREAM_NAME = process.env.HUBOT_REDIS_INBOX_STREAM_NAME ?? 'hubot-inbox'
-
-class InboxMessage {
-    constructor(id, body) {
-        this.id = id
-        this.body = body
-    }
-}
-
-class InboxEnvelope {
-    constructor(id, sender, room, occurredAt, recordedAt, message) {
-        this.id = id
-        this.sender = sender
-        this.room = room
-        this.occurredAt = occurredAt ?? new Date().toISOString()
-        this.recordedAt = recordedAt ?? new Date().toISOString()
-        this.message = message
-    }
-}
-
-class Inbox {
-    constructor() {
-        this.entries = []
-    }
-
-    static Map(textMessage) {
-        const { user, room, text } = textMessage
-        const envelope = new InboxEnvelope(
-            textMessage.id,
-            user.user,
-            room,
-            textMessage.occurredAt,
-            textMessage.recordedAt,
-            new InboxMessage(textMessage.id, text)
-        )
-        return envelope
-    }
-}
-
+const HUBOT_REDIS_OUTBOX_STREAM_NAME = process.env.HUBOT_REDIS_OUTBOX_STREAM_NAME ?? 'hubot-outbox'
+const HUBOT_REDIS_OUTBOX_GROUP_NAME = process.env.HUBOT_REDIS_OUTBOX_GROUP_NAME ?? 'hubot-group'
+const HUBOT_REDIS_OUTBOX_CONSUMER_NAME = process.env.HUBOT_REDIS_OUTBOX_CONSUMER_NAME ?? 'consumer1'
 export default async robot => {
+
     const client = createClient({ url: HUBOT_REDIS_INBOX_URL })
     await client.connect()
+
+    const outbox = new Outbox(client, {
+        streamName: HUBOT_REDIS_OUTBOX_STREAM_NAME,
+        groupName: HUBOT_REDIS_OUTBOX_GROUP_NAME,
+        consumerName: HUBOT_REDIS_OUTBOX_CONSUMER_NAME,
+    })
+    outbox.on('received', async entries => {
+        for await (const entry of entries) {
+            const message = entry.message
+            await robot.adapter.reply({room: message.room, user: message.sender, text: message.body}, message.body)
+        }
+    })
+    await outbox.run()
 
     const cleanup = async () => {
         try {
             await client.close()
+            await outbox.close()
         } catch (err) {
             // ignore errors on close
         }

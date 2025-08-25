@@ -3,6 +3,8 @@
 
 `hubot-redis-inbox` is a Hubot script that enables horizontal scaling of Hubot by using Redis Streams and Consumer Groups. It adds all incoming messages to a Redis stream (INBOX) and reads from another stream (OUTBOX) to deliver messages to the chat adapter. This allows multiple Hubot instances (Redis Consumers) to coordinate and process messages efficiently. The Redis Consumer Groups facility load balances the messages across the Hubot consumers/instances.
 
+You'll want [hubot-redis-consumer](https://github.com/hubot-friends/hubot-redis-consumer) for running Hubot instances that do all the work.
+
 ## Features
 
 - Adds all chat messages to a Redis stream (INBOX)

@@ -132,3 +132,4 @@ redis-data
 appendonlydir
 .hubot_history
 external-scripts.json
+.DS_Store
